@@ -68,23 +68,19 @@ class PatchEmbedding(nn.Module):
         x = self.linear(x)        
         return x, attention_mask
     
-    # Let's do positional embedding of the patches. To each patches, I will add the X and Y coordinates of the patch in the image. 
-# This will help the model to understand the spatial relationships between the patches.
-# The X and Y coordinate of each patches will be added to the embedding of the patch.
 
 class PositionalEmbedding(nn.Module):
-    """Adds x and y positional embedding to the input tensor.
+    """Adds positional embedding to the input tensor.
     """
 
     def __init__(self, emb_dim=32, max_length=256):
         super().__init__()
         self.emb_dim = emb_dim
         self.max_length = max_length
-        self.x_emb = nn.Parameter(torch.rand(1, max_length, emb_dim))
-        self.y_emb = nn.Parameter(torch.rand(1, max_length, emb_dim))
+        self.pos_emb = nn.Parameter(torch.rand(1, max_length, emb_dim))
 
     def forward(self, x):
-        x = x + self.x_emb + self.y_emb
+        x = x + self.pos_emb
         return x
     
 
