@@ -13,7 +13,7 @@ import torchvision
 from torchvision import transforms
 import torch.optim as optim
 import torch.nn as nn
-
+import torch
 
 model = ResoVit(patch_size=32,  max_length=1024, num_classes=102,img_channels=3)
 
@@ -35,9 +35,9 @@ learning_rate = 0.001
 
 # Create model and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(vit.parameters(), lr=learning_rate)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-train_model(vit, train_loader, test_loader, criterion, optimizer, num_epochs)
+train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs)
 ```
 
 
