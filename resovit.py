@@ -23,14 +23,10 @@ class PatchEmbedding(nn.Module):
         self.max_length = max_length
         self.linear = nn.Linear(patch_size*patch_size*img_channels, emb_dim)
     
-    def get_input_image_dim(self,x):
-        """"
-        Returns the input image dimensions.
-        """
-        return x.shape[-3:]
     
     def forward(self,x):
-        img_dim = self.get_input_image_dim(x)
+        img_dim = x.shape[-3:]
+        
         # Get the number of patches required to cover the image:
         num_patches = (img_dim[1]//self.patch_size) * (img_dim[2]//self.patch_size)
         if num_patches > self.max_length:
