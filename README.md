@@ -7,7 +7,7 @@ Implementation of a variable resolution image pipeline for training Vision  Tran
 For example, you can train the model on the Oxford 102 Flowers dataset which consists of various flower images of varying (H,W) dimensions
 
 ```python
-from resovit import ResoViT
+from resovit import ResoVit
 from utils import custom_collate_fn, train_model
 import torchvision
 from torchvision import transforms
