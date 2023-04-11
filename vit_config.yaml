@@ -1,3 +1,6 @@
+# From : "Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, T., ... & Gelly, S. (2021). An image is worth 16x16 words: Transformers for image recognition at scale. arXiv preprint arXiv:2010.11929."
+
+
 # Configuration for ViT-Base
 
 model_name: ViT-Base
@@ -18,4 +21,15 @@ hidden_size: 1024
 num_layers: 24
 num_heads: 16
 mlp_dim: 4096
+dropout: 0.1
+
+# Configuration for ViT-Huge
+
+model_name: ViT-Huge
+patch_size: 16
+num_classes: 1000
+hidden_size: 1280
+num_layers: 32
+num_heads: 16
+mlp_dim: 5120
 dropout: 0.1
