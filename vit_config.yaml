@@ -1,0 +1,21 @@
+# Configuration for ViT-Base
+
+model_name: ViT-Base
+patch_size: 16
+num_classes: 1000
+hidden_size: 768
+num_layers: 12
+num_heads: 12
+mlp_dim: 3072
+dropout: 0.1
+
+# Configuration for ViT-Large
+
+model_name: ViT-Large
+patch_size: 16
+num_classes: 1000
+hidden_size: 1024
+num_layers: 24
+num_heads: 16
+mlp_dim: 4096
+dropout: 0.1
