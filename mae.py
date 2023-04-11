@@ -1,5 +1,9 @@
 from einops import repeat
+import copy
 import torch.nn.functional as F
+import torch
+import torch.nn as nn
+
 
 class MAE(nn.Module):
     def __init__(
@@ -20,13 +24,18 @@ class MAE(nn.Module):
         num_patches, encoder_dim = encoder.positional_embedding.pos_emb.shape[-2:]
         pixel_values_per_patch = encoder.patch_embedding.linear.weight.shape[1]
 
-        self.decoder = encoder.transformer_encoder
+        #Make a copy of encode.transformer_encoder to use as decoder:
+        #self.decoder = copy.deepcopy(encoder.transformer_encoder)
+        decoder_layer = nn.TransformerEncoderLayer(d_model=self.decoder_dim, nhead=decoder_heads, dim_feedforward=decoder_dim_head)
+        self.decoder = nn.TransformerEncoder(decoder_layer, decoder_depth)
         self.enc_to_dec = nn.Linear(encoder_dim, decoder_dim) if encoder_dim != decoder_dim else nn.Identity()
         self.decoder_pos_emb = nn.Embedding(num_patches, decoder_dim)
         self.mask_token = nn.Parameter(torch.randn(decoder_dim))
 
         self.to_pixels = nn.Linear(decoder_dim, pixel_values_per_patch)
         self.patch_to_emb = encoder.patch_embedding.linear
+        self.pos_emb = encoder.positional_embedding
+        self.dec_pos_emb = copy.deepcopy(encoder.positional_embedding)
 
     def forward(self, x):
     # x is a list of tensors, I need to get the individual patch embeddings, attn_masks, and positional embeddings and concatenate them into a single tensor before passing it to the transformer encoder.
@@ -34,16 +43,20 @@ class MAE(nn.Module):
             #Add a batch dimension to img:
             img = img.unsqueeze(0)
             patches,attn_mask, x_pos, y_pos = self.encoder.patch_embedding.to_patch(img)
-        
             if i == 0:
                 x = patches
                 attn_masks = attn_mask
+                x_pos_list = x_pos
+                y_pos_list = y_pos
             else:
                 x = torch.cat((x, patches), dim=0)
                 attn_masks = torch.cat((attn_masks, attn_mask), dim=0)
-                
+                x_pos_list = torch.cat((x_pos_list, x_pos), dim=0)
+                y_pos_list = torch.cat((y_pos_list, y_pos), dim=0)
+
         batch, num_patches, num_pixels = x.shape
         patch_emb = self.patch_to_emb(x)
+        patch_emb = self.pos_emb(patch_emb,x_pos_list,y_pos_list)
         patch_emb_shape = patch_emb.shape
         # assume patch_embedding and attention_mask are already defined
         # flatten the patch embedding and attention mask tensors
@@ -70,7 +83,7 @@ class MAE(nn.Module):
         # reshape the modified patch embedding tensor to the original shape
         patch_embedding_modified = patch_embedding_flat.view(patch_emb_shape)
         #Apply positional embedding:
-        tokens = model.positional_embedding(patch_embedding_modified)
+        tokens = self.encoder.positional_embedding(patch_embedding_modified,x_pos_list,y_pos_list)
 
         # create a boolean mask for non-padded and non-masked patches
         non_pad_mask = ~torch.eq(attention_mask_flat, 0)
@@ -88,13 +101,13 @@ class MAE(nn.Module):
         mask = mask.view(patch_emb_shape[0], patch_emb_shape[1])
         replace_mask = replace_mask.view(patch_emb_shape[0],patch_emb_shape[1])
 
-        encoded_tokens = model.transformer_encoder(tokens,src_key_padding_mask=mask.permute(1,0))
+        encoded_tokens = self.encoder.transformer_encoder(tokens,src_key_padding_mask=attn_masks.permute(1,0))
         # project encoder to decoder dimensions, if they are not equal - the paper says you can get away with a smaller dimension for decoder
         decoder_tokens = self.enc_to_dec(encoded_tokens)
 
         # reapply decoder position embedding to unmasked tokens
-        unmasked_decoder_tokens = decoder_tokens + self.decoder_pos_emb(torch.rand(batch, num_patches, device = decoder_tokens.device).argsort(dim = -1))
-                
+        #unmasked_decoder_tokens = decoder_tokens + self.decoder_pos_emb(torch.rand(batch, num_patches, device = decoder_tokens.device).argsort(dim = -1))
+        unmasked_decoder_tokens =  self.dec_pos_emb(decoder_tokens,x_pos_list,y_pos_list)    
     
         decoded_tokens = self.decoder(unmasked_decoder_tokens)
         pred_pixel_values = self.to_pixels(decoded_tokens)
