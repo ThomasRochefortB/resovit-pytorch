@@ -40,4 +40,6 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs)
 ```
 
-
+---
+# WIP - Masked Autoencoder
+I am working on a masked autoencoder to train the model on images of varying resolutions. The idea would be to train the encoder on various dataset to create a ressemblance of a computer vision foundation model. Files can be found in the `mae.py` file
