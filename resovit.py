@@ -69,7 +69,7 @@ class PatchEmbedding(nn.Module):
         y_pos = F.pad(y_pos, (0, self.max_length - y_pos.shape[0]), value=-1)
         x_pos = F.pad(x_pos, (0, self.max_length - x_pos.shape[0]), value=-1)
 
-        return x, attention_mask, x_pos, y_pos
+        return x, attention_mask, x_pos.unsqueeze(0), y_pos.unsqueeze(0)
 
     
     def forward(self,x):
@@ -88,7 +88,7 @@ class PositionalEmbedding(nn.Module):
         self.max_length = max_length
         self.pos_emb = nn.Parameter(torch.rand(1, max_length, emb_dim))
     def forward(self, x,x_pos, y_pos):
-        x = x + self.pos_emb*x_pos.unsqueeze(0).unsqueeze(-1).expand(-1, -1, self.emb_dim) + self.pos_emb*y_pos.unsqueeze(0).unsqueeze(-1).expand(-1, -1, self.emb_dim)
+        x = x + self.pos_emb*x_pos.unsqueeze(-1).expand(-1, -1, self.emb_dim) + self.pos_emb*y_pos.unsqueeze(-1).expand(-1, -1, self.emb_dim)
         return x
     
 
