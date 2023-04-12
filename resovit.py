@@ -106,6 +106,7 @@ class ResoVit(nn.Module):
                 max_length=256,
                 num_classes=10,
                 img_channels=1): 
+        
         super().__init__() 
 
         self.embedding_dim = embedding_dim
@@ -118,7 +119,8 @@ class ResoVit(nn.Module):
                                                                                     dim_feedforward=mlp_size, 
                                                                                     dropout=attn_dropout,
                                                                                     batch_first=True,
-                                                                                    norm_first=True),
+                                                                                    norm_first=True,
+                                                                                    activation='gelu'),
                                                         num_layers=num_transformer_layers)
 
         self.classifier = nn.Sequential(

@@ -26,7 +26,7 @@ class MAE(nn.Module):
 
         #Make a copy of encode.transformer_encoder to use as decoder:
         #self.decoder = copy.deepcopy(encoder.transformer_encoder)
-        decoder_layer = nn.TransformerEncoderLayer(d_model=self.decoder_dim, nhead=decoder_heads, dim_feedforward=decoder_dim_head)
+        decoder_layer = nn.TransformerEncoderLayer(d_model=self.decoder_dim, nhead=decoder_heads, dim_feedforward=decoder_dim_head,batch_first=True,norm_first=True,activation='gelu')
         self.decoder = nn.TransformerEncoder(decoder_layer, decoder_depth)
         self.enc_to_dec = nn.Linear(encoder_dim, decoder_dim) if encoder_dim != decoder_dim else nn.Identity()
         self.decoder_pos_emb = nn.Embedding(num_patches, decoder_dim)
@@ -43,6 +43,7 @@ class MAE(nn.Module):
             #Add a batch dimension to img:
             img = img.unsqueeze(0)
             patches,attn_mask, x_pos, y_pos = self.encoder.patch_embedding.to_patch(img)
+            attn_mask, x_pos, y_pos = attn_mask.to(patches.device), x_pos.to(patches.device), y_pos.to(patches.device)
             if i == 0:
                 x = patches
                 attn_masks = attn_mask
@@ -56,7 +57,6 @@ class MAE(nn.Module):
 
         batch, num_patches, num_pixels = x.shape
         patch_emb = self.patch_to_emb(x)
-        patch_emb = self.pos_emb(patch_emb,x_pos_list,y_pos_list)
         patch_emb_shape = patch_emb.shape
         # assume patch_embedding and attention_mask are already defined
         # flatten the patch embedding and attention mask tensors
