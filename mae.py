@@ -101,7 +101,7 @@ class MAE(nn.Module):
         mask = mask.view(patch_emb_shape[0], patch_emb_shape[1])
         replace_mask = replace_mask.view(patch_emb_shape[0],patch_emb_shape[1])
 
-        encoded_tokens = self.encoder.transformer_encoder(tokens,src_key_padding_mask=attn_masks.permute(1,0))
+        encoded_tokens = self.encoder.transformer_encoder(tokens,src_key_padding_mask=attn_masks)
         # project encoder to decoder dimensions, if they are not equal - the paper says you can get away with a smaller dimension for decoder
         decoder_tokens = self.enc_to_dec(encoded_tokens)
 

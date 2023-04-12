@@ -3,6 +3,8 @@ import torchvision
 from torchvision import transforms
 from PIL import Image
 import random
+import torch.nn as nn
+
 
 def custom_collate_fn(batch):
     """
@@ -40,7 +42,7 @@ class CustomMNIST(torchvision.datasets.MNIST):
         img = transforms.Resize((new_size_h,new_size_w))(img)
         return img
     
-def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs, train_log_freq = 100):
+def train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs, train_log_freq = 100, max_grad_norm=None):
     # Train model and track the loss as well as the training accuracy:
     # Set device
 
@@ -58,6 +60,10 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, num_epoc
             outputs = model(images)
             loss = criterion(outputs, labels)
             loss.backward()
+            
+            if max_grad_norm is not None:
+                nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
+
             optimizer.step()
             running_loss_train += loss.item()
             running_acc_train += (outputs.argmax(1) == labels).float().mean()

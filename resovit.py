@@ -101,22 +101,26 @@ class ResoVit(nn.Module):
                 embedding_dim:int=32, # Hidden size D from Table 1 for ViT-Base
                 mlp_size:int=512, # MLP size from Table 1 for ViT-Base
                 num_heads:int=4, # Heads from Table 1 for ViT-Base
-                attn_dropout:float=0, # Dropout for attention projection
-                mlp_dropout:float=0.1, # Dropout for dense/MLP layers 
+                attn_dropout:float=0, # Dropout for encoder 
                 embedding_dropout:float=0.1, # Dropout for patch and position embeddings
                 max_length=256,
                 num_classes=10,
                 img_channels=1): 
-        super().__init__() # don't forget the super().__init__()!
+        super().__init__() 
+
         self.embedding_dim = embedding_dim
         self.patch_embedding = PatchEmbedding(patch_size=patch_size,max_length=max_length, emb_dim=self.embedding_dim,img_channels=img_channels)
         self.embedding_dropout = nn.Dropout(p=embedding_dropout)
         self.positional_embedding = PositionalEmbedding(emb_dim=self.embedding_dim,max_length=max_length)
-        self.transformer_encoder = nn.TransformerEncoder( 
-            nn.TransformerEncoderLayer(d_model=self.embedding_dim, nhead=num_heads, dim_feedforward=mlp_size, dropout=attn_dropout),
-            num_layers=num_transformer_layers)
 
-            # 10. Create classifier head
+        self.transformer_encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=self.embedding_dim, 
+                                                                                    nhead=num_heads, 
+                                                                                    dim_feedforward=mlp_size, 
+                                                                                    dropout=attn_dropout,
+                                                                                    batch_first=True,
+                                                                                    norm_first=True),
+                                                        num_layers=num_transformer_layers)
+
         self.classifier = nn.Sequential(
             nn.LayerNorm(normalized_shape=self.embedding_dim),
             nn.Linear(in_features=self.embedding_dim, 
@@ -130,7 +134,7 @@ class ResoVit(nn.Module):
             img = img.unsqueeze(0)
             patches, attn_mask, x_pos, y_pos = self.patch_embedding(img)
             # Make sure the attn_mask is on the same device as the patches
-            attn_mask = attn_mask.to(patches.device)
+            attn_mask, x_pos, y_pos = attn_mask.to(patches.device), x_pos.to(patches.device), y_pos.to(patches.device)
             patches = self.embedding_dropout(patches)
             patches = self.positional_embedding(patches,x_pos,y_pos)
             if i == 0:
@@ -139,7 +143,9 @@ class ResoVit(nn.Module):
             else:
                 x = torch.cat((x, patches), dim=0)
                 attn_masks = torch.cat((attn_masks, attn_mask), dim=0)
-        x = self.transformer_encoder(x, src_key_padding_mask=attn_masks.permute(1,0))
+        x = self.embedding_dropout(x)
+        x = self.transformer_encoder(x, src_key_padding_mask=attn_masks)
+
         x = x.mean(dim=1) # Take the average of the embeddings across the sequence dimension
         x = self.classifier(x)
         return x
