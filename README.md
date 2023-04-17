@@ -39,6 +39,21 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 train_model(model, train_loader, test_loader, criterion, optimizer, num_epochs)
 ```
+---
+# Performance comparison:
+The custom collate function for variable resolution images in the dataloader implies using lists of tensors instead of a single tensor. This is not ideal for training on GPUs as the model forward function needs to be adapted to work with lists. The following table shows the performance of the model on Flowers102 when compared to SimpleViT and ViT from the lucidraind/vit-pytorch library.
+
+These were collected by running the performance_test.ipynb on a standard Google Colab notebook with a Tesla K80 GPU.
+
+TODO
+| Model | Epochs | Batch size | Time per epoch (s) 
+| --- | --- | --- | --- |
+| ResoVit | 10 | 64 |  x |
+| SimpleViT | 10 | 64 |  x |
+| ViT | 10 | 64 |  x |
+
+
+
 
 ---
 # WIP - Masked Autoencoder
