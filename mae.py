@@ -39,21 +39,29 @@ class MAE(nn.Module):
 
     def forward(self, x):
     # x is a list of tensors, I need to get the individual patch embeddings, attn_masks, and positional embeddings and concatenate them into a single tensor before passing it to the transformer encoder.
-        for i, img in enumerate(x):
-            #Add a batch dimension to img:
-            img = img.unsqueeze(0)
-            patches,attn_mask, x_pos, y_pos = self.encoder.patch_embedding.to_patch(img)
-            attn_mask, x_pos, y_pos = attn_mask.to(patches.device), x_pos.to(patches.device), y_pos.to(patches.device)
-            if i == 0:
-                x = patches
-                attn_masks = attn_mask
-                x_pos_list = x_pos
-                y_pos_list = y_pos
-            else:
-                x = torch.cat((x, patches), dim=0)
-                attn_masks = torch.cat((attn_masks, attn_mask), dim=0)
-                x_pos_list = torch.cat((x_pos_list, x_pos), dim=0)
-                y_pos_list = torch.cat((y_pos_list, y_pos), dim=0)
+        
+        #check if x is a list:
+        if isinstance(x,list):
+            for i, img in enumerate(x):  
+                #Add a batch dimension to img:
+                img = img.unsqueeze(0)
+                patches,attn_mask, x_pos, y_pos = self.encoder.patch_embedding.to_patch(img)
+                attn_mask, x_pos, y_pos = attn_mask.to(patches.device), x_pos.to(patches.device), y_pos.to(patches.device)
+                if i == 0:
+                    x = patches
+                    attn_masks = attn_mask
+                    x_pos_list = x_pos
+                    y_pos_list = y_pos
+                else:
+                    x = torch.cat((x, patches), dim=0)
+                    attn_masks = torch.cat((attn_masks, attn_mask), dim=0)
+                    x_pos_list = torch.cat((x_pos_list, x_pos), dim=0)
+                    y_pos_list = torch.cat((y_pos_list, y_pos), dim=0)
+        else:
+            patches,attn_masks, x_pos_list, y_pos_list = self.encoder.patch_embedding.to_patch(x)
+            attn_masks, x_pos_list, y_pos_list = attn_masks.to(patches.device), x_pos_list.to(patches.device), y_pos_list.to(patches.device)
+            x = patches
+            attn_mask = attn_masks
 
         batch, num_patches, num_pixels = x.shape
         patch_emb = self.patch_to_emb(x)
@@ -116,3 +124,5 @@ class MAE(nn.Module):
         actuals = x*replace_mask.unsqueeze(-1).expand(-1, -1, num_pixels)
 
         return predictions, actuals, x, attn_mask
+    
+    

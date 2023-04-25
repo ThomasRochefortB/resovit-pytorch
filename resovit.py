@@ -131,20 +131,27 @@ class ResoVit(nn.Module):
         
     def forward(self, x):
         # x is a list of tensors, I need to get the individual patch embeddings, attn_masks, and positional embeddings and concatenate them into a single tensor before passing it to the transformer encoder.
-        for i, img in enumerate(x):
-            #Add a batch dimension to img:
-            img = img.unsqueeze(0)
-            patches, attn_mask, x_pos, y_pos = self.patch_embedding(img)
-            # Make sure the attn_mask is on the same device as the patches
-            attn_mask, x_pos, y_pos = attn_mask.to(patches.device), x_pos.to(patches.device), y_pos.to(patches.device)
-            patches = self.embedding_dropout(patches)
-            patches = self.positional_embedding(patches,x_pos,y_pos)
-            if i == 0:
-                x = patches
-                attn_masks = attn_mask
-            else:
-                x = torch.cat((x, patches), dim=0)
-                attn_masks = torch.cat((attn_masks, attn_mask), dim=0)
+        if isinstance(x,list):
+
+            for i, img in enumerate(x):
+                #Add a batch dimension to img:
+                img = img.unsqueeze(0)
+                patches, attn_mask, x_pos, y_pos = self.patch_embedding(img)
+                # Make sure the attn_mask is on the same device as the patches
+                attn_mask, x_pos, y_pos = attn_mask.to(patches.device), x_pos.to(patches.device), y_pos.to(patches.device)
+                patches = self.embedding_dropout(patches)
+                patches = self.positional_embedding(patches,x_pos,y_pos)
+                if i == 0:
+                    x = patches
+                    attn_masks = attn_mask
+                else:
+                    x = torch.cat((x, patches), dim=0)
+                    attn_masks = torch.cat((attn_masks, attn_mask), dim=0)
+        else:
+            patches,attn_masks, x_pos_list, y_pos_list = self.encoder.patch_embedding.to_patch(x)
+            attn_masks, x_pos_list, y_pos_list = attn_masks.to(patches.device), x_pos_list.to(patches.device), y_pos_list.to(patches.device)
+            x = patches
+            
         x = self.embedding_dropout(x)
         x = self.transformer_encoder(x, src_key_padding_mask=attn_masks)
 
