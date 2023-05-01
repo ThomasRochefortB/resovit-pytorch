@@ -3,7 +3,7 @@ import copy
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
-
+from resovit import PositionalEmbedding
 
 class MAE(nn.Module):
     def __init__(
@@ -35,7 +35,7 @@ class MAE(nn.Module):
         self.to_pixels = nn.Linear(decoder_dim, pixel_values_per_patch)
         self.patch_to_emb = encoder.patch_embedding.linear
         self.pos_emb = encoder.positional_embedding
-        self.dec_pos_emb = copy.deepcopy(encoder.positional_embedding)
+        self.dec_pos_emb  = PositionalEmbedding(decoder_dim, num_patches)
 
     def forward(self, x):
     # x is a list of tensors, I need to get the individual patch embeddings, attn_masks, and positional embeddings and concatenate them into a single tensor before passing it to the transformer encoder.
